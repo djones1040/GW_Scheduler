@@ -55,8 +55,9 @@ def main():
 	ra = [t[1] for t in target_data]
 	dec = [t[2] for t in target_data]
 	priorities = [float(t[3]) for t in target_data]
-	disc_dates = [parse(t[4]) for t in target_data]
+	disc_dates = [t[4] for t in target_data]
 	disc_mags = [float(t[5]) for t in target_data]
+	types = [t[6] for t in target_data]
 	coords = SkyCoord(ra,dec,unit=(unit.hour, unit.deg))
 
 	for i in range(len(observatory_telescopes)):
@@ -65,15 +66,33 @@ def main():
 		obs = observatories[obs_keys[i]]
 
 		for j in range(len(names)):
-			targets.append(Target(names[j], 
-				coords[j], 
-				priorities[j], 
-				TargetType.Supernova, 
-				obs.ephemeris.lat, 
-				obs.sidereal_radian_array, 
-				disc_dates[j], 
-				disc_mags[j], 
-				obs.obs_date
+
+			target_type = None
+			disc_date = None
+
+			if types[j] == "STD":
+				target_type = TargetType.Standard
+				disc_date = None
+			elif types[j] == "TMP":
+				target_type = TargetType.Template
+				disc_date = parse(disc_dates[j])
+			elif types[j] == "SN":
+				target_type = TargetType.Supernova
+				disc_date = parse(disc_dates[j])
+			else:
+				raise ValueError('Unrecognized target type!')
+
+			targets.append(
+				Target(
+					name=names[j], 
+					coord=coords[j], 
+					priority=priorities[j], 
+					target_type=target_type, 
+					observatory_lat=obs.ephemeris.lat, 
+					sidereal_radian_array=obs.sidereal_radian_array, 
+					disc_date=disc_date, 
+					apparent_mag=disc_mags[j], 
+					obs_date=obs.obs_date
 				)
 			)
 
