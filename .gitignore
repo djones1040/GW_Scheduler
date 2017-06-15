@@ -2,3 +2,5 @@
 *.csv
 *.pyc
 __pycache__
+PosterPlots/
+SwopeAnalysis.xlsx
