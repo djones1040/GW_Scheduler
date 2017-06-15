@@ -45,7 +45,8 @@ def main():
 		horizon="-12",
 		telescopes={"Nickel":Nickel()},
 		obs_date_str=obs_date,
-		utc_offset=lick_pst_utc_offset,
+		utc_offset=lick_pdt_utc_offset, # California observes Pacific Daylight Time (PDT) from 3/12/2017 - 11/5/2017 => UTC-7
+		# utc_offset=lick_pst_utc_offset, # California observes Pacific Standard Time (PST) from 1/1/2017 - 3/12/2017 => UTC-8
 		utc_offset_name="PST"
 	)
 
