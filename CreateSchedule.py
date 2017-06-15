@@ -32,7 +32,8 @@ def main():
 		horizon="-12",
 		telescopes={"Swope":Swope()},
 		obs_date_str=obs_date,
-		utc_offset=lco_clst_utc_offset,
+		utc_offset=lco_clt_utc_offset, # Chile observes Chile Standard Time (CLT) from 5/13/2017 - 8/12/2017 => UTC-4
+		# utc_offset=lco_clst_utc_offset, # Chile observes Chile Summer Time (CLST) from 8/13/2017 - 12/31/2017 => UTC-3
 		utc_offset_name="CLST"
 	)
 

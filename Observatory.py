@@ -175,7 +175,7 @@ class Observatory():
         ax2.get_xaxis().set_major_formatter(md.DateFormatter('%H:%M'))
 
         ax3.plot(self.utc_time_array, np.zeros(length_of_night))
-        num_ticks = 11
+        num_ticks = 7
         nn = round(length_of_night/num_ticks)
         ax3_ind = [i*nn for i in range(num_ticks)]
         ax3_ind.remove(0)
