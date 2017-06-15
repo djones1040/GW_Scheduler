@@ -15,11 +15,13 @@ def main():
 	parser.add_argument("-f", "--file", help="CSV file with targets to schedule.")
 	parser.add_argument("-d", "--date", help="YYYYMMDD formatted observation date.")
 	parser.add_argument("-ot", "--obstele", help="Comma-delimited list of <Observatory>:<Telescope>, to schedule targets.")
+	parser.add_argument("-pp", "--plot", help="Preview the plot with a modal window during command line execution.", action='store_true')
 	args = parser.parse_args()
 
 	file_name = args.file
 	obs_date = args.date
 	observatory_telescopes = args.obstele.split(",")
+	preview_plot = args.plot
 	
 	obs_keys = [o.split(":")[0] for o in observatory_telescopes]
 	tele_keys = [t.split(":")[1] for t in observatory_telescopes]
@@ -104,9 +106,10 @@ def main():
 		print("First %s target: %s" % (tele_keys[i], targets[0].name))
 		print("Last %s target: %s" % (tele_keys[i], targets[-1].name))
 
-		obs.schedule_targets(tele_keys[i])
+		obs.schedule_targets(tele_keys[i], preview_plot)
 
-	exit = input("\n\nENTER to exit")
+	if preview_plot:
+		exit = input("\n\nENTER to exit")
 
 if __name__ == "__main__": main()
 

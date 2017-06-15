@@ -125,10 +125,13 @@ class Swope(Telescope):
         exposures.update({Constants.r_band: mean_exp})
         exposures.update({Constants.i_band: mean_exp})
 
-        # Only include these exposures if a relatively new SN
-        if days_from_disc < 60:
-            exposures.update({Constants.u_band: self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.u_band]))})
-            exposures.update({Constants.B_band: self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.B_band]))})
+        u_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.u_band])
+        B_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.B_band])
+
+        # Only include these exposures if time to S/N is <= 600s
+        if (u_exp <= 600):
+            exposures.update({Constants.u_band: u_exp})
+            exposures.update({Constants.B_band: B_exp})
             exposures.update({Constants.V_band: mean_exp})
 
         # Finally, don't go less than 45s (~ readout time), don't go more than 600s on Swope

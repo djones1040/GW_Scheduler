@@ -69,7 +69,7 @@ class Observatory():
         contiguous = all(a == b for a, b in enumerate(i, first + 1))
         return contiguous
 
-    def schedule_targets(self, telescope_name):
+    def schedule_targets(self, telescope_name, preview_plot=False):
         
         # Update internal Target list with priorities and exposures
         telescope = self.telescopes[telescope_name]
@@ -147,10 +147,10 @@ class Observatory():
                     bad_o.append(tgt)
                     break
         
-        self.plot_results(o, telescope_name)
+        self.plot_results(o, telescope_name, preview_plot)
         telescope.write_schedule(self.name, self.obs_date ,o)
         
-    def plot_results(self, good_targets, telescope_name):
+    def plot_results(self, good_targets, telescope_name, preview_plot):
         good_targets.sort(key = operator.attrgetter('starting_index'))
         length_of_night = len(self.utc_time_array) # in minutes
 
@@ -208,4 +208,5 @@ class Observatory():
         fig_to_save = "%s_%s_%s_Plot.png" % (self.name, telescope_name, self.obs_date_string)
         fig.savefig(fig_to_save,bbox_inches='tight',dpi=300)
 
-        plt.show(block=False)
+        if preview_plot:
+            plt.show(block=False)
