@@ -66,7 +66,7 @@ class Telescope(metaclass=ABCMeta):
                 frac_time = float(t.total_observable_min)/float(total_good_time)
                 frac_exp_time = (1.0-float(t.total_minutes)/float(total_exp_time))
 
-                t.net_priority = (frac_p*frac_time*frac_exp_time)/total_prob
+                t.net_priority = t.priority+((frac_p*frac_time*frac_exp_time)/total_prob)
                 print("Nat: %s; Net: %0.5f" % (t.priority, t.net_priority))
         else:
             print("No valid targets...")
@@ -125,14 +125,18 @@ class Swope(Telescope):
         exposures.update({Constants.r_band: mean_exp})
         exposures.update({Constants.i_band: mean_exp})
 
-        u_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.u_band])
-        B_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.B_band])
+        u_exp = self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.u_band]))
+        B_exp = self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.B_band]))
+
 
         # Only include these exposures if time to S/N is <= 600s
-        if (u_exp <= 600):
-            exposures.update({Constants.u_band: u_exp})
+        if (B_exp <= 600):
             exposures.update({Constants.B_band: B_exp})
             exposures.update({Constants.V_band: mean_exp})
+            exposures.update({Constants.u_band: u_exp})
+
+            # if (u_exp <= 600):
+                
 
         # Finally, don't go less than 45s (~ readout time), don't go more than 600s on Swope
         for key, value in exposures.items():
