@@ -238,7 +238,13 @@ class Swope(Telescope):
                 tgt_row = []
                 tgt_row.append(t.name)
                 tgt_row.append("=\"%02d:%02d:%0.1f\"" % (ra[0],ra[1],ra[2]))
-                tgt_row.append("=\"%02d:%02d:%0.1f\"" % (dec[0],np.abs(dec[1]),np.abs(dec[2])))
+
+                dec_field = ("=\"%02d:%02d:%0.1f\"" % (dec[0],np.abs(dec[1]),np.abs(dec[2]))) 
+                # Python has a -0.0 object. If the deg is this (because object lies < 60 min south), the string formatter will drop the negative sign
+                if t.coord.dec < 0.0 and dec[0] == 0.0:
+                    dec_field = ("=\"-0:%02d:%0.1f\"" % (np.abs(dec[1]),np.abs(dec[2])))
+
+                tgt_row.append(dec_field)
                 tgt_row.append(None)
 
                 # Last criterion: if previous obj had full 6 filters, but this target only has 3
@@ -423,7 +429,13 @@ class Nickel(Telescope):
                 tgt_row = []
                 tgt_row.append(t.name)
                 tgt_row.append("=\"%02d:%02d:%0.1f\"" % (ra[0],ra[1],ra[2]))
-                tgt_row.append("=\"%02d:%02d:%0.1f\"" % (dec[0],np.abs(dec[1]),np.abs(dec[2])))
+
+                dec_field = ("=\"%02d:%02d:%0.1f\"" % (dec[0],np.abs(dec[1]),np.abs(dec[2]))) 
+                # Python has a -0.0 object. If the deg is this (because object lies < 60 min south), the string formatter will drop the negative sign
+                if t.coord.dec < 0.0 and dec[0] == 0.0:
+                    dec_field = ("=\"-0:%02d:%0.1f\"" % (np.abs(dec[1]),np.abs(dec[2])))
+
+                tgt_row.append(dec_field)
                 tgt_row.append(None)
 
                 # Last criterion: if previous obj had full 4 filters, but this target only has 2
