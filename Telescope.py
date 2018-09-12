@@ -78,13 +78,22 @@ class Swope(Telescope):
         self.targets = None
         self.name = "Swope"
         # Filter name: Zero-point
+        # self.filters = {
+        #     Constants.u_band:21.083616,
+        #     Constants.B_band:22.885212,
+        #     Constants.V_band:22.992250,
+        #     Constants.g_band:23.66132,
+        #     Constants.r_band:23.320230,
+        #     Constants.i_band:23.131884
+        # }
+        #change as of Jun 4 after mirror cleaning
         self.filters = {
-            Constants.u_band:21.083616,
-            Constants.B_band:22.885212,
-            Constants.V_band:22.992250,
-            Constants.g_band:23.66132,
-            Constants.r_band:23.320230,
-            Constants.i_band:23.131884
+            Constants.u_band:21.17887,
+            Constants.B_band:22.30013,
+            Constants.V_band:23.14361,
+            Constants.g_band:23.894173,
+            Constants.r_band:23.646687,
+            Constants.i_band:23.466449
         }
 
         self.exp_funcs = {
@@ -106,13 +115,15 @@ class Swope(Telescope):
         days_from_disc = (sn.obs_date - sn.disc_date).days
         mag_reduction = days_from_disc*0.03
         adj_app_mag = sn.apparent_mag + mag_reduction
-
+        print("days: %0.3f, mag red: %0.3f, adj mag: %0.3f" % (days_from_disc, mag_reduction, adj_app_mag))
         # Change S/N depending on phase...
-        s_to_n = 10 # base signal to noise
-        if days_from_disc <= 10:
-            s_to_n = 30
-        elif days_from_disc > 10 and days_from_disc <= 60:
-            s_to_n = 20
+        s_to_n = 30 # base signal to noise
+        # s_to_n = 10 # base signal to noise (old)
+        #for objects older than 10, the S/N decreases, so the exp times were changing significantly. Now the S/N is set to 25
+        # if days_from_disc <= 10:
+        #     s_to_n = 30
+        # elif days_from_disc > 10 and days_from_disc <= 60:
+        #     s_to_n = 20
         
         g_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.g_band])
         r_exp = self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.r_band])
@@ -124,15 +135,25 @@ class Swope(Telescope):
         exposures.update({Constants.g_band: mean_exp})
         exposures.update({Constants.r_band: mean_exp})
         exposures.update({Constants.i_band: mean_exp})
+        
 
         u_exp = self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.u_band]))
         B_exp = self.round_to_num(Constants.round_to, self.time_to_S_N(s_to_n, adj_app_mag, self.filters[Constants.B_band]))
 
+        # print (B_exp)
 
+        # exposures.update({Constants.B_band: B_exp})
+        # exposures.update({Constants.V_band: mean_exp})
+        # exposures.update({Constants.u_band: u_exp})
         # Only include these exposures if time to S/N is <= 600s
-        if (B_exp <= 600):
+        # if (B_exp <= 600):
+
+        if (mean_exp <= 450):
+            print("Target Name: %s; u_exp: %s, mean_exp: %s" % (sn.name, u_exp, mean_exp))
             exposures.update({Constants.B_band: B_exp})
             exposures.update({Constants.V_band: mean_exp})
+
+        if (mean_exp <= 300):
             exposures.update({Constants.u_band: u_exp})
 
             # if (u_exp <= 600):
@@ -264,7 +285,10 @@ class Swope(Telescope):
                     last_filter = Constants.g_band
                     
                     if len(t.exposures) > 3:
-                        output_rows.append(self.swope_filter_row(Constants.u_band, t.exposures[Constants.u_band]))
+                        if Constants.u_band in t.exposures:
+                            output_rows.append(self.swope_filter_row(Constants.u_band, t.exposures[Constants.u_band]))
+
+                        # output_rows.append(self.swope_filter_row(Constants.u_band, t.exposures[Constants.u_band]))
                         output_rows.append(self.swope_filter_row(Constants.V_band, t.exposures[Constants.V_band]))
                         output_rows.append(self.swope_filter_row(Constants.B_band, t.exposures[Constants.B_band]))
                         last_filter = Constants.B_band
@@ -277,7 +301,10 @@ class Swope(Telescope):
 
                     output_rows.append(self.swope_filter_row(Constants.B_band, t.exposures[Constants.B_band]))
                     output_rows.append(self.swope_filter_row(Constants.V_band, t.exposures[Constants.V_band]))
-                    output_rows.append(self.swope_filter_row(Constants.u_band, t.exposures[Constants.u_band]))
+                    
+                    if Constants.u_band in t.exposures:
+                        output_rows.append(self.swope_filter_row(Constants.u_band, t.exposures[Constants.u_band]))
+
                     output_rows.append(self.swope_filter_row(Constants.g_band, t.exposures[Constants.g_band]))
                     output_rows.append(self.swope_filter_row(Constants.i_band, t.exposures[Constants.i_band]))
                     output_rows.append(self.swope_filter_row(Constants.r_band, t.exposures[Constants.r_band]))
