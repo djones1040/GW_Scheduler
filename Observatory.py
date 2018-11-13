@@ -9,6 +9,8 @@ import pytz as pytz
 import numpy as np
 import operator
 import copy
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import matplotlib.dates as md
