@@ -1,6 +1,10 @@
 from enum import Enum
 
 import numpy as np
+from astroplan import Observer
+from astropy.coordinates import EarthLocation
+import astropy.units as u
+from astropy.coordinates import SkyCoord
 
 class TargetType(Enum):
     Supernova = 1
@@ -9,7 +13,7 @@ class TargetType(Enum):
 
 class Target:
     def __init__(self, name, coord, priority, target_type, observatory_lat, sidereal_radian_array, \
-                 disc_date=None, apparent_mag=None, obs_date=None):
+                 disc_date=None, apparent_mag=None, obs_date=None, obs_datetime=None):
         # Provided by Constructor
         self.name = name
         self.coord = coord
@@ -18,6 +22,7 @@ class Target:
         self.disc_date = disc_date
         self.apparent_mag = apparent_mag
         self.obs_date = obs_date
+        self.obs_datetime = obs_datetime
         
         # Computed by Constructor
         self.raw_airmass_array = self.compute_airmass(observatory_lat, sidereal_radian_array)
@@ -53,3 +58,31 @@ class Target:
         am[(am > 3.0) | (am < 1.0)] = 9999
 
         return am
+
+	def compute_time_until_rise(self, observatory_lon, observatory_lat, observatory_height, timezone,
+								current_time, airmass_at_rise=3):
+
+		location = EarthLocation.from_geodetic(observatory_lon*u.deg, observatory_lat*u.deg,
+											   observatory_height*u.m)
+		telescope = Observer(location=location, timezone=timezone)
+
+		target_coord = SkyCoord(self.coord.ra.deg,self.coord.dec.deg,units=u.deg)
+
+		horizon = 90-np.arccos(1/airmass_at_rise)*(180./np.pi)
+		rise_time = location.target_rise_time(current_time, target_coord, horizon*u.deg)
+		
+		return rise_time
+
+	def compute_time_until_set(self, observatory_lon, observatory_lat, observatory_height, timezone,
+								current_time, airmass_at_set=3):
+
+		location = EarthLocation.from_geodetic(observatory_lon*u.deg, observatory_lat*u.deg,
+											   observatory_height*u.m)
+		telescope = Observer(location=location, timezone=timezone)
+
+		target_coord = SkyCoord(self.coord.ra.deg,self.coord.dec.deg,units=u.deg)
+
+		horizon = 90-np.arccos(1/airmass_at_set)*(180./np.pi)
+		set_time = location.target_set_time(current_time, target_coord, horizon*u.deg)
+		
+		return set_time

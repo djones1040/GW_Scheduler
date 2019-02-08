@@ -16,9 +16,13 @@ from matplotlib.pyplot import cm
 import matplotlib.dates as md
 
 class Observatory():
-    def __init__(self, name, lon, lat, elevation, horizon, telescopes, obs_date_str, utc_offset, utc_offset_name):        
+    def __init__(self, name, lon, lat, elevation, horizon, telescopes,
+				 obs_date_str, utc_offset, fov, gw_exptime, slewtime_per_deg):        
         
         self.name = name
+		self.fov = fov
+		self.gw_exptime = gw_exptime
+		self.slewtime_per_deg = slewtime_per_deg
         self.ephemeris = ephem.Observer()
         self.ephemeris.lon = lon
         self.ephemeris.lat = lat
@@ -35,9 +39,9 @@ class Observatory():
         self.utc_end_night = self.ephemeris.next_rising(ephem.Sun(), use_center=True).datetime()
         
         self.local_begin_night = pytz.utc.localize(self.utc_begin_night) \
-                                 .astimezone(UTC_Offset(utc_offset,utc_offset_name))
+                                 .astimezone(UTC_Offset(utc_offset,name))
         self.local_end_night = pytz.utc.localize(self.utc_end_night) \
-                                   .astimezone(UTC_Offset(utc_offset,utc_offset_name))
+                                   .astimezone(UTC_Offset(utc_offset,name))
         
         timeDiff = self.local_end_night - self.local_begin_night
         self.length_of_night = int(round(timeDiff.total_seconds() / 60))
@@ -151,7 +155,89 @@ class Observatory():
         
         self.plot_results(o, telescope_name, preview_plot)
         telescope.write_schedule(self.name, self.obs_date ,o)
+
+    def schedule_target(self, telescope_name, time_obs, preview_plot=False):
         
+        # Update internal Target list with priorities and exposures
+        telescope = self.telescopes[telescope_name]
+        telescope.compute_exposures()
+        telescope.compute_net_priorities()
+        targets = telescope.get_targets()
+
+        # Sorted by priority and closeness to discovery
+        targets.sort(key = operator.attrgetter('net_priority')) # 'TotalGoodAirMass'
+        length_of_night = len(self.utc_time_array) # In minutes
+        
+        for tgt in targets:
+            print("%s: %s; %s min; Pri: %s" % (tgt.name, tgt.exposures, tgt.total_minutes, tgt.priority))
+
+        time_slots = np.zeros(length_of_night)
+        o = []
+        bad_o = []
+
+        for tgt in targets:
+
+            gam1 = copy.deepcopy(tgt.raw_airmass_array)
+            gam2 = copy.deepcopy(tgt.raw_airmass_array)
+            found = False
+
+            while not found:
+                if tgt.total_observable_min <= 0:
+                    print("%s is unobservable!" % tgt.name)
+                    break
+
+                gam2[np.where(time_slots == 1)] = 8888 # make different than airmass cutoff flag
+                goodtime = np.where(gam2 <= Constants.airmass_threshold)
+                n = len(goodtime[0])
+
+                current_start = -1 # So that iterator below starts at 0, the first index
+                best_indices = []
+                largest_airmass = 1e+6
+
+                # We are crawling forward along the array, grabbing segments of length "total_min", 
+                # and incrementing in starting index
+                for i in range(n):
+                    current_start += 1 # start index
+                    end = (current_start + tgt.total_minutes) # how many
+                    candidate_indices = goodtime[0][current_start:end] # array of selected indices
+
+                    if len(candidate_indices) != tgt.total_minutes: # If this is at the end of the array, it won't be the size we need
+        #                 print("%s: can't fit %s exp time in slot of size %s " % \
+        #                       (obj.Name, obj.TotalMinutes, len(candidate_indices)))
+        #                 print(candidate_indices)
+                        continue
+                    else:
+                        # Compute the integrated airmass. We're looking for the smallest # => the best conditions
+                        integrated_am = np.sum(gam1[candidate_indices])
+
+                        # Check if this associated integrated airmass corresponds to a range of time that's contiguous
+                        contiguous = self.is_contiguous(candidate_indices)
+
+                        # if this is the smallest, and is for a contiguous span of time, it's the new one to beat
+                        if integrated_am < largest_airmass and contiguous:
+                            largest_airmass = integrated_am
+                            best_indices = candidate_indices
+                            
+                if largest_airmass < 1e+6:
+                    
+                    found = True
+                    time_slots[best_indices] = 1 # reserve these slots
+
+                    # grab the corresponding
+                    tgt.scheduled_airmass_array = np.asarray(tgt.raw_airmass_array)[best_indices]
+                    tgt.scheduled_time_array = np.asarray(self.local_time_array)[best_indices]
+                    tgt.starting_index = best_indices[0]
+
+                    o.append(tgt)
+                else:
+                    print("Can't fit %s. Skipping!" % tgt.name)
+                    bad_o.append(tgt)
+                    break
+        
+        self.plot_results(o, telescope_name, preview_plot)
+        telescope.write_schedule(self.name, self.obs_date ,o)
+
+		
     def plot_results(self, good_targets, telescope_name, preview_plot):
         good_targets.sort(key = operator.attrgetter('starting_index'))
         length_of_night = len(self.utc_time_array) # in minutes
